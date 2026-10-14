@@ -9,12 +9,14 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import struct
 from pathlib import Path
 
 BASE_PA = 0x62820000
 PAGE_SIZE = 0x1000
 PAGE_COUNT = 48
 OLD_LEAD = bytes.fromhex("ba fc 0c 00 00 ed")
+SVM_ROUND_TRIP = bytes.fromhex("0f01da0f01d80f01db")
 
 
 def main() -> int:
@@ -46,9 +48,21 @@ def main() -> int:
 
     for path, content in ((args.image, data), (args.log, args.log.read_bytes())):
         print(f"{path.name}: {len(content)} bytes, sha256={hashlib.sha256(content).hexdigest()}")
-    for offset in range(len(data)):
-        if data.startswith(OLD_LEAD, offset):
-            print(f"old lead at PA 0x{BASE_PA + offset:x}")
+    for name, pattern in (("old lead", OLD_LEAD),
+                          ("VMLOAD/VMRUN/VMSAVE", SVM_ROUND_TRIP)):
+        start = 0
+        while (offset := data.find(pattern, start)) >= 0:
+            print(f"{name} at PA 0x{BASE_PA + offset:x}")
+            start = offset + 1
+    for target in (0x628336B8, 0x62833880):
+        for offset in range(len(data) - 5):
+            if data[offset] not in (0xE8, 0xE9):
+                continue
+            displacement = struct.unpack_from("<i", data, offset + 1)[0]
+            if BASE_PA + offset + 5 + displacement == target:
+                opcode = "call" if data[offset] == 0xE8 else "jump"
+                print(f"possible {opcode} to PA 0x{target:x} from PA "
+                      f"0x{BASE_PA + offset:x}")
     old_address = 0x6283D800
     at_old_address = data[old_address - BASE_PA:old_address - BASE_PA + 8]
     print(f"13.60 address on 12.70: PA 0x{old_address:x} bytes={at_old_address.hex()}")
