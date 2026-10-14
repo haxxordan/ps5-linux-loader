@@ -14,6 +14,10 @@ fw1270_hv_3d000.elf: fw1270_hv_page.c
 	$(CC) $(CFLAGS) -DHV_PAGE_PA=0x6283d000ULL \
 	    -DHV_PROBE_PA=0x6283d800ULL -o $@ $<
 
+fw1270_hv_code_window.elf: fw1270_hv_code_window.c
+	$(CC) $(CFLAGS) -o $@ $<
+
 .PHONY: clean
 clean:
-	rm -f fw1270_hv_page.elf fw1270_hv_3d000.elf
+	rm -f fw1270_hv_page.elf fw1270_hv_3d000.elf \
+	    fw1270_hv_code_window.elf
