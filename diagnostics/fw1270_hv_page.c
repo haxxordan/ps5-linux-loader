@@ -26,8 +26,9 @@
 #define HV_PROBE_PA   UINT64_C(0x62882a60)
 #define PAGE_BYTES    0x1000U
 
-/* The SDK exports this value but does not declare it in every kernel.h. */
+/* These symbols are available in the SDK but absent from ps5/kernel.h. */
 extern unsigned long KERNEL_ADDRESS_DMAP_BASE;
+extern int sceKernelGetMainSocId(void);
 
 static uint8_t page[PAGE_BYTES];
 
