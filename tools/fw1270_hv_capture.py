@@ -54,7 +54,7 @@ def main() -> int:
         while (offset := data.find(pattern, start)) >= 0:
             print(f"{name} at PA 0x{BASE_PA + offset:x}")
             start = offset + 1
-    for target in (0x628336B8, 0x62833880):
+    for target in (0x628336B8, 0x62833880, 0x62846A00):
         for offset in range(len(data) - 5):
             if data[offset] not in (0xE8, 0xE9):
                 continue
@@ -63,6 +63,12 @@ def main() -> int:
                 opcode = "call" if data[offset] == 0xE8 else "jump"
                 print(f"possible {opcode} to PA 0x{target:x} from PA "
                       f"0x{BASE_PA + offset:x}")
+    jump_table_pa = 0x6284B1FC
+    vmmcall_code = 0x81
+    table_offset = jump_table_pa - BASE_PA + (vmmcall_code - 0x14) * 4
+    branch_offset = struct.unpack_from("<i", data, table_offset)[0]
+    print(f"candidate exitcode 0x81 jump-table target: PA "
+          f"0x{jump_table_pa + branch_offset:x}")
     old_address = 0x6283D800
     at_old_address = data[old_address - BASE_PA:old_address - BASE_PA + 8]
     print(f"13.60 address on 12.70: PA 0x{old_address:x} bytes={at_old_address.hex()}")
