@@ -55,7 +55,10 @@ int main(void)
   uint32_t fw = kernel_get_fw_version();
   int soc = sceKernelGetMainSocId();
   uint64_t dmap = (uint64_t)KERNEL_ADDRESS_DMAP_BASE;
+  uint64_t text = (uint64_t)KERNEL_ADDRESS_TEXT_BASE;
+  uint64_t data = (uint64_t)KERNEL_ADDRESS_DATA_BASE;
   if ((fw & 0xffff0000U) != FW_1270 || soc != SOC_PHAT ||
+      !text || data <= text || data - text != 0xd50000U ||
       (dmap >> 48) != 0xffffU || (dmap & 0x3fffffffU) != 0 ||
       dmap > UINT64_MAX - HV_PAGE_PA - PAGE_BYTES)
     return 1;
