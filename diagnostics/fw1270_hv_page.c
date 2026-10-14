@@ -1,9 +1,10 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
  * Capture one 12.70 hypervisor page after a successful Byepervisor run.
  *
- * This is an acquisition diagnostic, not a loader. The prior 12.70 AP probe
- * read the qword at PA 0x62882a60. We first repeat that 8-byte read, then
- * capture only its containing 4 KiB page. An unmapped HV read can still crash
+ * This is an acquisition diagnostic, not a loader. The default build repeats
+ * the 12.70 AP probe's qword at PA 0x62882a60, then captures its 4 KiB page.
+ * Compile-time overrides select a different page and probe; those addresses
+ * are not validated by the default test. An unmapped HV read can still crash
  * the console; there is no reliable recovery from a fault in kernel_copyout.
  *
  * Output: /mnt/usb0/PS5-12.70-hv-page-<pid>-<time>.{txt,bin}
@@ -22,9 +23,19 @@
 
 #define FW_1270       0x12700000U
 #define SOC_PHAT      0x840f60
+#ifndef HV_PAGE_PA
 #define HV_PAGE_PA    UINT64_C(0x62882000)
+#endif
+#ifndef HV_PROBE_PA
 #define HV_PROBE_PA   UINT64_C(0x62882a60)
+#endif
 #define PAGE_BYTES    0x1000U
+
+_Static_assert((HV_PAGE_PA & (PAGE_BYTES - 1)) == 0,
+               "HV page must be aligned");
+_Static_assert(HV_PROBE_PA >= HV_PAGE_PA &&
+               HV_PROBE_PA - HV_PAGE_PA <= PAGE_BYTES - sizeof(uint64_t),
+               "HV probe must be inside the selected page");
 
 /* These symbols are available in the SDK but absent from ps5/kernel.h. */
 extern unsigned long KERNEL_ADDRESS_DMAP_BASE;
